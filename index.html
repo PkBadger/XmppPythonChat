@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.1/css/bootstrap-combined.no-icons.min.css" rel="stylesheet">
+    <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+    <style>
+      .myMessage{
+        -moz-border-radius: 23px;
+        -webkit-border-radius: 23px;
+        border-radius: 23px;
+        /*IE 7 AND 8 DO NOT SUPPORT BORDER RADIUS*/
+        filter: progid:DXImageTransform.Microsoft.gradient(startColorstr = '#b8fbff', endColorstr = '#bdfff8');
+        /*INNER ELEMENTS MUST NOT BREAK THIS ELEMENTS BOUNDARIES*/
+        /*Element must have a height (not auto)*/
+        /*All filters must be placed together*/
+        -ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr = '#b8fbff', endColorstr = '#bdfff8')";
+        /*Element must have a height (not auto)*/
+        /*All filters must be placed together*/
+        background-image: -moz-linear-gradient(top, #b8fbff, #bdfff8);
+        background-image: -ms-linear-gradient(top, #b8fbff, #bdfff8);
+        background-image: -o-linear-gradient(top, #b8fbff, #bdfff8);
+        background-image: -webkit-gradient(linear, center top, center bottom, from(#b8fbff), to(#bdfff8));
+        background-image: -webkit-linear-gradient(top, #b8fbff, #bdfff8);
+        background-image: linear-gradient(top, #b8fbff, #bdfff8);
+        -moz-background-clip: padding;
+        -webkit-background-clip: padding-box;
+        background-clip: padding-box;
+        border: 1px solid #000000;
+        margin-top: 5px;
+
+        /*Use "background-clip: padding-box" when using rounded corners to avoid the gradient bleeding through the corners*/
+        /*--IE9 WILL PLACE THE FILTER ON TOP OF THE ROUNDED CORNERS--*/
+
+
+      }
+      .box {
+        width: 99%;
+        margin: 0 auto;
+        overflow: auto;
+        border: 1px solid #cccccc;
+        padding: 2px;
+        text-align: justify;
+        background: transparent;
+        height: 45vh;
+        }
+      #messageBoard{
+
+        float: center;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+
+      }
+      #sendMessage1{
+        width: 98%;
+        float: center;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+      }
+    </style>
+  </head>
+  <body class="container">
+    <div class="navbar navbar-inverse">
+      <div class="navbar-inner">
+        <a class="brand" href="#">Chat</a>
+
+          <div style="float:right;margin-top:10px">
+            <input type="text" id="ussername" placeholder="Username"/>
+
+            <input type="password" id="password" placeholder="Password"/>
+            <button onclick="connect()" id="con">connect</button>
+            <button onclick="disconnect()" id="dis">Disconnect</button>
+          </div>
+      </div>
+    </div>
+
+    <hr>
+      Status : <span id="message"></span></br>
+      Notification : <span id="not"></span>
+    <hr>
+
+    <div class="box span12" id="messageBoard" >
+
+
+
+    </div>
+
+    <label>To:</label>
+    <input type="text" id="To">
+    <label>Mensaje</label>
+    <textarea id="sendMessage1"></textarea>
+    <button onclick="sendMessage()" id="send">Send</button>
+
+  <script>
+    var $cont = $('#messageBoard');
+
+    $("#dis").hide();
+    $("#send").hide();
+    var user="";
+    var pass="";
+    var status = "disconnected";
+    $("#ussername").val("badger@cml.chi.itesm.mx");
+    $("#password").val("Servers2016.");
+    var ws = new WebSocket('ws://localhost:8888/ws');
+    var $message = $('#message');
+    ws.onopen = function(){
+      $message.attr("class", 'label label-important'); //label label-success
+      $message.text('Disconnected');
+    };
+    ws.onmessage = function(ev){
+
+      var json = JSON.parse(ev.data);
+      console.log(json);
+      if(json.value == "connected"){
+          $message.attr("class","label label-success");
+          $message.text('Connected');
+          $("#ussername").hide(1000);
+          $("#password").hide(1000);
+          $("#con").hide(1000);
+          status = "connected";
+          $("#dis").show(1000);
+          $("#send").show(1000);
+      }else if(json.value == "Desconectado"){
+        $message.attr("class", 'label label-important');
+        $message.text('Disconnected');
+        $("#dis").hide(1000);
+        $("#ussername").show(1000);
+        $("#password").show(1000);
+        $("#con").show(1000);
+        $("#send").hide(1000);
+        $("#messageBoard").empty();
+      }
+      else{
+        $("#messageBoard").append("<b>"+json.sender+": <b>");
+        $("#messageBoard").append(json.value + "</br>");
+        $cont[0].scrollTop = $cont[0].scrollHeight;
+        $("#not").attr("class", 'label label-info');
+        $("#not").hide();
+        $("#not").fadeIn("slow");
+        $("#not").text('recieved message');
+      }
+    };
+    ws.onclose = function(ev){
+      $message.attr("class", 'label label-important');
+      $message.text('Disconnected');
+    };
+    ws.onerror = function(ev){
+      $message.attr("class", 'label label-warning');
+      $message.text('error occurred');
+    };
+    function connect(){
+      user = $("#ussername").val();
+      pass = $("#password").val();
+
+      $.ajax({
+        url: "connect?ussername="+ user+"&password="+ pass+"&action=connect",
+        context: document.body
+      });
+    }
+    function sendMessage(){
+      var message = $("#sendMessage1").val();
+      var to = $("#To").val();
+      $("#messageBoard").append("<b>"+user+": <b>");
+      $("#messageBoard").append(message + "</br>");
+      $cont[0].scrollTop = $cont[0].scrollHeight;
+      $.ajax({
+        url: "connect?to="+ to+"&message="+ message+ "&action=send"+"&ussername="+user,
+        context: document.body
+      });
+    }
+    function disconnect(){
+      $.ajax({
+        url: "connect?ussername="+ user+"&password="+ pass+ "&action=disconnect",
+        context: document.body
+      });
+    }
+    $(window).on("beforeunload", function() {
+      window.alert("adios");
+    return "Do you really want to close?";
+  });
+  $("#messageBoard").change(function() {
+    window.alert("cambio");
+    scrollToBottom();
+  });
+  function scrollToBottom() {
+    $('#messageBoard').scrollTop($('#messageBoard')[0].scrollHeight);
+  }
+
+  </script>
+</body>
+</html>
