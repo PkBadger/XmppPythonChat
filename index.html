@@ -33,6 +33,15 @@
 
 
       }
+      .away{
+        background-color: red;
+      }
+      .available{
+        background-color: green;
+      }
+      .btn{
+        margin-bottom: 10px;
+      }
       .box {
         width: 99%;
         margin: 0 auto;
@@ -69,8 +78,8 @@
             <input type="text" id="ussername" placeholder="Username"/>
 
             <input type="password" id="password" placeholder="Password"/>
-            <button onclick="connect()" id="con">connect</button>
-            <button onclick="disconnect()" id="dis">Disconnect</button>
+            <button onclick="connect()"class="btn" id="con">connect</button>
+            <button onclick="disconnect()" class="btn" id="dis">Disconnect</button>
           </div>
       </div>
     </div>
@@ -78,7 +87,18 @@
     <hr>
       Status : <span id="message"></span></br>
       Notification : <span id="not"></span>
+      <select onchange="changePresence()" id="precensia">
+        <option value="available" selected>Connected</option>
+        <option value="away">Away</option>
+      </select>
     <hr>
+    <label>Friends:</label>
+    <select id="Amigos" onchange="FriendChanged()">
+
+    </select>
+    <label>New Friend:</label>
+    <input type="text" id="NewF"/>
+    <button class="btn" onclick="addFriend()">Add</button>
 
     <div class="box span12" id="messageBoard" >
 
@@ -86,11 +106,10 @@
 
     </div>
 
-    <label>To:</label>
-    <input type="text" id="To">
+
     <label>Mensaje</label>
     <textarea id="sendMessage1"></textarea>
-    <button onclick="sendMessage()" id="send">Send</button>
+    <button onclick="sendMessage()" class="btn" id="send">Send</button>
 
   <script>
     var $cont = $('#messageBoard');
@@ -112,7 +131,32 @@
 
       var json = JSON.parse(ev.data);
       console.log(json);
-      if(json.value == "connected"){
+      //window.alert(json.friend);
+      if(json.action == "Roster"){
+        //window.alert("hola");
+        //$("#Amigos").append(json.friend);
+
+        $('#Amigos').append($('<option>', {
+          value: json.friend,
+          text : json.friend,
+          id:json.friend
+        }));
+
+      }
+      else if(json.action == "FriendRequest"){
+        //window.alert("Friend Request")
+        if (confirm('You have a new subscription: '+ json.friend+", Aprove him?")) {
+            $.ajax({
+              url: "http://localhost:8888/connect?value="+ json.friend+ "&action=Request&status=remove",
+              context: document.body
+            });
+          } else {
+            $.ajax({
+              url: "http://localhost:8888/connect?value="+ json.friend+ "&action=Request&status=subscribed",
+              context: document.body
+            });
+          }
+      }else if(json.action == "connected"){
           $message.attr("class","label label-success");
           $message.text('Connected');
           $("#ussername").hide(1000);
@@ -121,7 +165,9 @@
           status = "connected";
           $("#dis").show(1000);
           $("#send").show(1000);
-      }else if(json.value == "Desconectado"){
+          $("#Amigos").empty();
+
+      }else if(json.action == "Desconectado"){
         $message.attr("class", 'label label-important');
         $message.text('Disconnected');
         $("#dis").hide(1000);
@@ -130,15 +176,35 @@
         $("#con").show(1000);
         $("#send").hide(1000);
         $("#messageBoard").empty();
+
       }
-      else{
-        $("#messageBoard").append("<b>"+json.sender+": <b>");
-        $("#messageBoard").append(json.value + "</br>");
-        $cont[0].scrollTop = $cont[0].scrollHeight;
-        $("#not").attr("class", 'label label-info');
-        $("#not").hide();
-        $("#not").fadeIn("slow");
-        $("#not").text('recieved message');
+      else if(json.action == "PresenceUpdate"){
+        var string = "option[id='"+ json.sender+"']"
+        //'input[id="Customer.name"]'
+        if(json.value == "away"){
+          $(string).removeClass( "away available" )
+          $(string).addClass("away")
+        }
+        if(json.value == "available"){
+          $(string).removeClass( "away available" )
+          $(string).addClass("available")
+        }if(json.value == "unavailable"){
+          $(string).removeClass( "away available" )
+        }
+      }else if(json.action == "newMessage"){
+        //window.alert($("#Amigos").val())
+        if(json.sender == $("#Amigos").val()){
+          if(json.status != undefined){
+          $("#messageBoard").append("<b>"+user+": <b>");
+        }else{
+          $("#messageBoard").append("<b>"+json.sender+": <b>");
+        }
+          $("#messageBoard").append(json.value + "</br>");
+          $cont[0].scrollTop = $cont[0].scrollHeight;
+          $("#not").attr("class", 'label label-info');
+          $("#not").hide();
+          $("#not").fadeIn("slow");
+          $("#not").text('recieved message');}
       }
     };
     ws.onclose = function(ev){
@@ -154,26 +220,28 @@
       pass = $("#password").val();
 
       $.ajax({
-        url: "connect?ussername="+ user+"&password="+ pass+"&action=connect",
+        url: "http://localhost:8888/connect?ussername="+ user+"&password="+ pass+"&action=connect",
         context: document.body
       });
     }
     function sendMessage(){
       var message = $("#sendMessage1").val();
-      var to = $("#To").val();
-      $("#messageBoard").append("<b>"+user+": <b>");
-      $("#messageBoard").append(message + "</br>");
+      $("#sendMessage1").val("");
+      var to = $("#Amigos").val();
+      //$("#messageBoard").append("<b>"+user+": <b>");
+      //$("#messageBoard").append(message + "</br>");
       $cont[0].scrollTop = $cont[0].scrollHeight;
       $.ajax({
-        url: "connect?to="+ to+"&message="+ message+ "&action=send"+"&ussername="+user,
+        url: "http://localhost:8888/connect?to="+ to+"&message="+ message+ "&action=send"+"&ussername="+user,
         context: document.body
       });
     }
     function disconnect(){
       $.ajax({
-        url: "connect?ussername="+ user+"&password="+ pass+ "&action=disconnect",
+        url: "http://localhost:8888/connect?ussername="+ user+"&password="+ pass+ "&action=disconnect",
         context: document.body
       });
+      $("#Amigos").empty();
     }
     $(window).on("beforeunload", function() {
       window.alert("adios");
@@ -185,6 +253,27 @@
   });
   function scrollToBottom() {
     $('#messageBoard').scrollTop($('#messageBoard')[0].scrollHeight);
+  }
+  function FriendChanged(){
+    $("#messageBoard").empty();
+    $.ajax({
+      url: "http://localhost:8888/connect?ussername="+ user+"&password="+ pass+ "&action=getMessages",
+      context: document.body
+    });
+  }
+  function addFriend(){
+    var friend = $("#NewF").val()
+    $.ajax({
+      url: "http://localhost:8888/connect?ussername="+ user+"&friend="+ friend+ "&action=AddFriend",
+      context: document.body
+    });
+  }
+  function changePresence(){
+    precensia = $("#precensia").val()
+    $.ajax({
+      url: "http://localhost:8888/connect?value="+ precensia+ "&action=Presence",
+      context: document.body
+    });
   }
 
   </script>

@@ -10,10 +10,6 @@ import sleekxmpp
 from sleekxmpp import ClientXMPP
 import sqlite3
 
-# Python versions before 3.0 do not use UTF-8 encoding
-# by default. To ensure that Unicode is handled properly
-# throughout SleekXMPP, we will set the default encoding
-# ourselves to UTF-8.
 if sys.version_info < (3, 0):
     from sleekxmpp.util.misc_ops import setdefaultencoding
     setdefaultencoding('utf8')
@@ -28,6 +24,7 @@ except sqlite3.OperationalError:
     pass
 
 cl = []
+jsonMessages =[]
 
 class IndexHandler(web.RequestHandler):
     def get(self):
@@ -36,7 +33,7 @@ class IndexHandler(web.RequestHandler):
 
         #self.write(str(resultat))
         self.render("index.html")
-
+        pass
 class SocketHandler(websocket.WebSocketHandler):
     def check_origin(self, origin):
         return True
@@ -56,6 +53,7 @@ class ApiHandler(web.RequestHandler):
         self.finish()
         id = self.get_argument("id")
         value = self.get_argument("value")
+        print("para que sirve esto" + srt(value))
         data = {"id": id, "value" : value}
         data = json.dumps(data)
         for c in cl:
@@ -70,19 +68,8 @@ class Connect:
 
         def start(event):
             print("callback")
-            conn = sqlite3.connect('database.db')
-            c = conn.cursor()
-            c.execute('select * from messages')
-            res = c.fetchall()
-            resultat = []
-            for i in res:
-                resultat.append(i)
-                print(i)
-                data = {"value" : i[0], "sender": i[1]}
-                data = json.dumps(data)
-                for c in cl:
-                    c.write_message(data)
-            data = {"value" : "connected"}
+
+            data = {"action":"connected"}
             data = json.dumps(data)
             for c in cl:
                 c.write_message(data)
@@ -94,7 +81,7 @@ class Connect:
                 c.write_message(data)
         def disconnected(event):
             print("Desconectado")
-            data = {"value" : "Desconectado"}
+            data = {"action" : "Desconectado"}
             data = json.dumps(data)
             for c in cl:
                 c.write_message(data)
@@ -116,8 +103,10 @@ class Connect:
                 message = "<a href='"+urls[0]+"'>"+urls[0]+"</a>"
             c.execute("insert into messages values (?, ?)", (message,sender))
             conn.commit()
-            data = {"value" : message,"sender": sender}
+            data = {"action":"newMessage","value" : message,"sender": sender}
+            jsonMessages.append(data)
             data = json.dumps(data)
+
             for c in cl:
                 c.write_message(data)
 
@@ -135,23 +124,86 @@ class Connect:
         #    data = json.dumps(data)
         #    for c in cl:
         #        c.write_message(data)
-        #def Roster(event):
-        #    print("nuevo Amigo3")
-        #    print(event)
-        #    data = {"value" : "Roster Conseguido"}
-        #    data = json.dumps(data)
-        #    for c in cl:
-        #        c.write_message(data)
+        #def precenceAvailable(event):
+            #data = event.getStanzaValues()
+            #print("Alguien se conceto")
+            #print(data)
+            #print(data['from'].jid)
+
+
+        def precenceUnavailable(event):
+            data = event.getStanzaValues()
+            print("No disponible")
+            print(xmpp.boundjid.bare)
+            print(str(((data['from'].jid).split('/'))[0]))
+            if(str(((data['from'].jid).split('/'))[0]) != str(xmpp.boundjid.bare)):
+                print(data)
+
+                print(data['type'])
+                print(str(((data['from'].jid).split('/'))[0]))
+                data = {"action":"PresenceUpdate","value" : data['type'],"sender": str(((data['from'].jid).split('/'))[0])}
+                jsonMessages.append(data)
+                data = json.dumps(data)
+
+                for c in cl:
+                    c.write_message(data)
+
+
+        def Roster(event):
+            print("nuevo Amigo3")
+            #msgLocations = {sleekxmpp.stanza.presence.Presence: "status",
+            #      sleekxmpp.stanza.message.Message: "body"}
+
+            data = event.getStanzaValues()
+
+            del data['roster']['ver']
+            print(data)
+
+            for item in data['roster']['items']:
+                json1 = {}
+                print(str(item.jid))
+                print(str(data['roster']['items'][item]['ask']))
+                #data['roster']['items'][item] = str(data(item))
+                #if(str(data['roster']['items'][item]['ask']) == "subscribe"):
+                    #print("Friend Request")
+                    #json1 = {"action":"FriendRequest","friend": str(item.jid)}
+                #else:
+                json1 = {"action":"Roster","friend": str(item.jid)}
+                json1 = json.dumps(json1)
+                for c in cl:
+                    c.write_message(json1)
+            conn = sqlite3.connect('database.db')
+            c = conn.cursor()
+            c.execute('select * from messages')
+            res = c.fetchall()
+            resultat = []
+            for i in res:
+                resultat.append(i)
+                #print(i)
+                data = {"value" : i[0], "sender": i[1]}
+                data = json.dumps(data)
+                for c in cl:
+                    c.write_message(data)
+
+
+            #json.dumps(your_data, ensure_ascii=False)
+            #data = {"value" : "Roster Conseguido"}
+            #data = json.loads(json.dumps(data, ensure_ascii=False))
+            #print(xmpp.roster)
+            #for c in cl:
+                #c.write_message(data)
         print(xmpp)
         xmpp.add_event_handler("connected", start)
         xmpp.add_event_handler("failed_auth", failed)
         xmpp.add_event_handler("disconnected", disconnected)
         xmpp.add_event_handler("message",messageReceived)
         xmpp.add_event_handler("disconnected", disconnected)
+        #xmpp.add_event_handler("presence_available",precenceAvailable)
+        xmpp.add_event_handler("changed_status",precenceUnavailable)
         xmpp.send_presence()
         #xmpp.add_event_handler("presence_subscribed",subscribe)
         #xmpp.add_event_handler("roster_update",roster_update)
-        #xmpp.get_roster(callback= Roster)
+
         # If you are working with an OpenFire server, you may need
         # to adjust the SSL version used:
         # xmpp.ssl_version = ssl.PROTOCOL_SSLv3
@@ -171,6 +223,8 @@ class Connect:
             #     ...
             print("conecto")
             xmpp.process(block=False)
+            xmpp.get_roster(callback= Roster)
+            #print(xmpp.client_roster)
 
             print("Done")
             #xmpp.disconnect(wait=True)
@@ -219,8 +273,34 @@ class XmppConnect(web.RequestHandler):
             conn.commit()
             print(message)
             Clientes[0].send_message(mto=to, mbody=message)
-            print("Primer")
+            data = {"action":"newMessage","value":message, "sender": to,"status":"1"}
+            data = json.dumps(data)
+            jsonMessages.append(data)
+
+            for c in cl:
+                c.write_message(data)
+
             #Clientes.remove(Clientes[0])
+        if(action =="getMessages"):
+            #conn = sqlite3.connect('database.db')
+            #c = conn.cursor()
+            #c.execute('select * from messages')
+            #res = c.fetchall()
+            #resultat = []
+            for i in jsonMessages :
+
+                for c in cl:
+                    c.write_message(i)
+        if(action =="Request"):
+            friend = self.get_argument("value")
+            status = self.get_argument("status")
+            Clientes[0].send_presence(pto = friend, ptype = status)
+        if(action == "Presence"):
+            presencia = self.get_argument("value")
+            Clientes[0].sendPresence(ptype = presencia)
+        if(action== "AddFriend"):
+            friend = self.get_argument("friend")
+            Clientes[0].send_presence(pto=friend, ptype='subscribe')
     @web.asynchronous
     def post(self):
         pass
@@ -237,6 +317,7 @@ app = web.Application([
 if __name__ == '__main__':
     Clientes = []
     app.listen(8888)
+    #jsonMessages = []
     if(ioloop.IOLoop.initialized()):
         print(ioloop.IOLoop.instance())
     ioloop.IOLoop.instance().start()
