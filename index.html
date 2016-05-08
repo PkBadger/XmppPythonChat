@@ -1,8 +1,15 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.1/css/bootstrap-combined.no-icons.min.css" rel="stylesheet">
-    <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+    <!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+<!-- Optional theme -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+<script   src="https://code.jquery.com/jquery-2.2.3.min.js"   integrity="sha256-a23g1Nt4dtEYOj7bR+vTu7+T8VP13humZFBJNIYoEJo="   crossorigin="anonymous"></script>
+<!-- Latest compiled and minified JavaScript -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
     <style>
       .myMessage{
         -moz-border-radius: 23px;
@@ -34,14 +41,12 @@
 
       }
       .away{
-        background-color: red;
+        background-color: #ffff99;
       }
       .available{
-        background-color: green;
+        background-color: #70db70;
       }
-      .btn{
-        margin-bottom: 10px;
-      }
+
       .box {
         width: 99%;
         margin: 0 auto;
@@ -53,14 +58,14 @@
         height: 45vh;
         }
       #messageBoard{
-
+        margin-top: 30px;
         float: center;
         display: block;
         margin-left: auto;
         margin-right: auto;
 
       }
-      #sendMessage1{
+      .sendMessage1{
         width: 98%;
         float: center;
         display: block;
@@ -70,57 +75,102 @@
     </style>
   </head>
   <body class="container">
-    <div class="navbar navbar-inverse">
+    <nav class="navbar navbar-inverse">
+
+
       <div class="navbar-inner">
-        <a class="brand" href="#">Chat</a>
+        <a class="navbar-brand" href="#">Chat</a>
 
-          <div style="float:right;margin-top:10px">
-            <input type="text" id="ussername" placeholder="Username"/>
+          <div class="navbar-form navbar-right">
+            <input type="text" id="ussername" class="form-control" placeholder="Username"/>
 
-            <input type="password" id="password" placeholder="Password"/>
-            <button onclick="connect()"class="btn" id="con">connect</button>
-            <button onclick="disconnect()" class="btn" id="dis">Disconnect</button>
+            <input type="password" id="password" class="form-control" placeholder="Password"/>
+
+
+          <button onclick="connect()"class="btn btn-default" id="con">connect</button>
+          <button onclick="disconnect()" class="btn btn-default" id="dis">Disconnect</button>
           </div>
       </div>
-    </div>
+    </nav>
 
     <hr>
-      Status : <span id="message"></span></br>
-      Notification : <span id="not"></span>
+      Server Status : <span id="message"></span></br>
+      Notification : <span id="not"></span></br>
+      <label>Status</label>
       <select onchange="changePresence()" id="precensia">
         <option value="available" selected>Connected</option>
         <option value="away">Away</option>
       </select>
     <hr>
-    <label>Friends:</label>
-    <select id="Amigos" onchange="FriendChanged()">
-
-    </select>
-    <label>New Friend:</label>
-    <input type="text" id="NewF"/>
-    <button class="btn" onclick="addFriend()">Add</button>
-
-    <div class="box span12" id="messageBoard" >
 
 
+      <div class="row">
+        <div class="col-sm-4">
 
-    </div>
+          <!--<div class="dropdown">
+            <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+              Friends
+              <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" id="Amigos" aria-labelledby="dropdownMenu1">
+
+            </ul>
+          </div>-->
 
 
-    <label>Mensaje</label>
-    <textarea id="sendMessage1"></textarea>
-    <button onclick="sendMessage()" class="btn" id="send">Send</button>
+          <label>New Friend:</label></br>
+          <input type="text" id="NewF"/><button class="btn btn-primary"  onclick="addFriend()" style="margin-left:10px;">Add</button></br>
+          <label>Group Chat</label></br>
+          <input type="text" placeholder="Group Name" id="GrupC"/><input placeholder="NickName" type="text" id="GrupN"  style="margin-left:10px;"/></br><button class="btn btn-primary"  onclick="JoinGroup()" style="margin-top:10px;">Join</button></br>
+          <label>Friends:</label>
+          <div id="Amigos">
+
+          </div>
+          <label>Chat Rooms:</label>
+          <div id="ChatRooms">
+
+          </div>
+        </div>
+        <div class="col-sm-8">
+          <h4 style="align:center" id="chatName"></h4><div id="eliminar"></div>
+          <div class="box span12" id="messageBoard" >
+
+
+
+          </div>
+
+
+          <label>Mensaje</label>
+
+          <textarea id="sendMessage1" class="sendMessage1"></textarea>
+          <button onclick="sendMessage()" class="btn btn-primary sendMessage1"style="margin-top:10px;" id="send">Send</button>
+        </div>
+      </div>
 
   <script>
     var $cont = $('#messageBoard');
-
-    $("#dis").hide();
-    $("#send").hide();
+    var currentChat = "";
+    var groupchatBool = false;
     var user="";
     var pass="";
+    var userC = $.cookie("ussername");
+    var passC = $.cookie("password");
+    if(userC != undefined && passC != undefined){
+      user = userC;
+      pass=passC;
+      $.ajax({
+        url: "http://localhost:8888/connect?ussername="+ userC+"&password="+ passC+"&action=connect",
+        context: document.body
+      });
+    }
+    $("#dis").hide();
+    $("#send").hide();
+
     var status = "disconnected";
     $("#ussername").val("badger@cml.chi.itesm.mx");
     $("#password").val("Servers2016.");
+    $("#GrupC").val("badger@conference.cml.chi.itesm.mx");
+    $("#GrupN").val("GreatBadger");
     var ws = new WebSocket('ws://localhost:8888/ws');
     var $message = $('#message');
     ws.onopen = function(){
@@ -130,19 +180,19 @@
     ws.onmessage = function(ev){
 
       var json = JSON.parse(ev.data);
-      console.log(json);
+
       //window.alert(json.friend);
-      if(json.action == "Roster"){
+      if(json.action == "DeleteRoster"){
+        $("#Amigos").empty();
+      }else if(json.action == "Roster"){
+        console.log(json);
+        //window.alert("holaaa111");
         //window.alert("hola");
         //$("#Amigos").append(json.friend);
 
-        $('#Amigos').append($('<option>', {
-          value: json.friend,
-          text : json.friend,
-          id:json.friend
-        }));
+        $('#Amigos').append('<a onclick="current(this.id,false)" id="'+json.friend+ '">'+json.friend+'</a></br>')
 
-      }
+            }
       else if(json.action == "FriendRequest"){
         //window.alert("Friend Request")
         if (confirm('You have a new subscription: '+ json.friend+", Aprove him?")) {
@@ -156,6 +206,8 @@
               context: document.body
             });
           }
+      }else if(json.action == "badUser"){
+        window.alert("Your password or ussername is incorrect")
       }else if(json.action == "connected"){
           $message.attr("class","label label-success");
           $message.text('Connected');
@@ -166,6 +218,8 @@
           $("#dis").show(1000);
           $("#send").show(1000);
           $("#Amigos").empty();
+          $("#ChatRooms").empty();
+
 
       }else if(json.action == "Desconectado"){
         $message.attr("class", 'label label-important');
@@ -179,9 +233,13 @@
 
       }
       else if(json.action == "PresenceUpdate"){
-        var string = "option[id='"+ json.sender+"']"
+        console.log(json);
+        //window.alert("holaaa");
+        var string = "a[id='"+ json.sender+"']"
         //'input[id="Customer.name"]'
+
         if(json.value == "away"){
+
           $(string).removeClass( "away available" )
           $(string).addClass("away")
         }
@@ -193,18 +251,22 @@
         }
       }else if(json.action == "newMessage"){
         //window.alert($("#Amigos").val())
-        if(json.sender == $("#Amigos").val()){
+        if(json.sender == currentChat){
           if(json.status != undefined){
           $("#messageBoard").append("<b>"+user+": <b>");
-        }else{
+        }else if(json.nick != undefined){
+            $("#messageBoard").append("<b>"+json.nick+": <b>");
+        }else {
           $("#messageBoard").append("<b>"+json.sender+": <b>");
         }
           $("#messageBoard").append(json.value + "</br>");
           $cont[0].scrollTop = $cont[0].scrollHeight;
+          }
           $("#not").attr("class", 'label label-info');
           $("#not").hide();
           $("#not").fadeIn("slow");
-          $("#not").text('recieved message');}
+          if(json.status == undefined){
+          $("#not").text('recieved message from: ' + json.sender);}
       }
     };
     ws.onclose = function(ev){
@@ -218,7 +280,8 @@
     function connect(){
       user = $("#ussername").val();
       pass = $("#password").val();
-
+        $.cookie("ussername", user);
+        $.cookie("password", pass);
       $.ajax({
         url: "http://localhost:8888/connect?ussername="+ user+"&password="+ pass+"&action=connect",
         context: document.body
@@ -227,28 +290,33 @@
     function sendMessage(){
       var message = $("#sendMessage1").val();
       $("#sendMessage1").val("");
-      var to = $("#Amigos").val();
+      var to = currentChat;
       //$("#messageBoard").append("<b>"+user+": <b>");
       //$("#messageBoard").append(message + "</br>");
       $cont[0].scrollTop = $cont[0].scrollHeight;
+      if(!groupchatBool){
       $.ajax({
-        url: "http://localhost:8888/connect?to="+ to+"&message="+ message+ "&action=send"+"&ussername="+user,
+        url: "http://localhost:8888/connect?to="+ to+"&message="+ message+ "&action=send"+"&ussername="+user+"&type=chat",
         context: document.body
-      });
+      });}else{
+        $.ajax({
+          url: "http://localhost:8888/connect?to="+ to+"&message="+ message+ "&action=send"+"&ussername="+user+"&type=groupchat",
+          context: document.body
+        });
+      }
     }
     function disconnect(){
+      $.removeCookie("ussername");
+      $.removeCookie("password");
       $.ajax({
         url: "http://localhost:8888/connect?ussername="+ user+"&password="+ pass+ "&action=disconnect",
         context: document.body
       });
       $("#Amigos").empty();
     }
-    $(window).on("beforeunload", function() {
-      window.alert("adios");
-    return "Do you really want to close?";
-  });
+
   $("#messageBoard").change(function() {
-    window.alert("cambio");
+    //window.alert("cambio");
     scrollToBottom();
   });
   function scrollToBottom() {
@@ -274,6 +342,41 @@
       url: "http://localhost:8888/connect?value="+ precensia+ "&action=Presence",
       context: document.body
     });
+  }
+  function eliminar(){
+    friend = currentChat;
+    $.ajax({
+      url: "http://localhost:8888/connect?ussername="+ user+"&friend="+ friend+ "&action=DeleteFriend",
+      context: document.body
+    });
+    var string = "a[id='"+ friend+"']"
+
+    currentChat ="";
+    $("#chatName").empty();
+    $("#eliminar").empty();
+
+    $(string).remove();
+  }
+  function current(ancor,group){
+    console.log(ancor);
+    currentChat = ancor;
+    $("#chatName").html(currentChat);
+    $("#eliminar").html("<button onclick='eliminar()' class='btn btn-danger'>Eliminar</button>");
+    FriendChanged();
+    //window.alert(currentChat);
+    groupchatBool = group;
+  }
+  function JoinGroup(){
+    var name = $("#GrupC").val();
+    var nick = $("#GrupN").val();
+
+    $.ajax({
+      url: "http://localhost:8888/connect?room="+ name+"&nick="+ nick+ "&action=JoinGroup",
+      context: document.body
+    });
+    $("#ChatRooms").append('<a onclick="current(this.id,true)" id="'+name+ '">'+name+'</a></br>')
+    currentChat = name
+
   }
 
   </script>
