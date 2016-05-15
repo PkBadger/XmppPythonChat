@@ -15,11 +15,12 @@ if sys.version_info < (3, 0):
     setdefaultencoding('utf8')
 else:
     raw_input = input
-conn = sqlite3.connect('database.db')
+conn = sqlite3.connect('important.db')
 c = conn.cursor()
 
 try:
-    c.execute('''CREATE TABLE messages (message text, user text)''')
+    c.execute('''CREATE TABLE messages (sender text,value text, status text,action text)''')
+    pass
 except sqlite3.OperationalError:
     pass
 
@@ -98,8 +99,7 @@ class Connect:
             for c in cl:
                 c.write_message(data)
         def messageReceived(event):
-            conn = sqlite3.connect('database.db')
-            c = conn.cursor()
+
             print("Mesanje recibido")
             msgLocations = {sleekxmpp.stanza.presence.Presence: "status",
                   sleekxmpp.stanza.message.Message: "body"}
@@ -114,8 +114,8 @@ class Connect:
             urls = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', message)
             if urls:
                 message = "<a href='"+urls[0]+"'>"+urls[0]+"</a>"
-            c.execute("insert into messages values (?, ?)", (message,sender))
-            conn.commit()
+            #c.execute("insert into messages values (?, ?)", (message,sender))
+
             data2 = event.getStanzaValues()
             print(data2)
             if(data2["type"]== "groupchat"):
@@ -203,10 +203,7 @@ class Connect:
                 json1 = json.dumps(json1)
                 for c in cl:
                     c.write_message(json1)
-            conn = sqlite3.connect('database.db')
-            c = conn.cursor()
-            c.execute('select * from messages')
-            res = c.fetchall()
+
             resultat = []
             for i in res:
                 resultat.append(i)
@@ -306,10 +303,7 @@ class XmppConnect(web.RequestHandler):
                 json1 = json.dumps(json1)
                 for c in cl:
                     c.write_message(json1)
-            conn = sqlite3.connect('database.db')
-            c = conn.cursor()
-            c.execute('select * from messages')
-            res = c.fetchall()
+
             resultat = []
             for i in res:
                 resultat.append(i)
@@ -340,17 +334,53 @@ class XmppConnect(web.RequestHandler):
             Clientes[0].disconnect(wait = True)
             print("Primer")
             Clientes.remove(Clientes[0])
+        if(action == "getImportant"):
+            print("importantes")
+            conn = sqlite3.connect('important.db')
+            c = conn.cursor()
+            c.execute('select * from messages')
+            res = c.fetchall()
+
+            for resu in res:
+                print(resu[2])
+                if(resu[2] == "1"):
+                    json1 = {"action":resu[3],"value":resu[1],"sender":resu[0]}
+                    json1 = json.dumps(json1)
+                    for c in cl:
+                        c.write_message(json1)
+                else:
+                    json1 = {"action":resu[3],"value":resu[1],"sender":resu[0],"status":1}
+                    json1 = json.dumps(json1)
+                    for c in cl:
+                        c.write_message(json1)
+        if(action == "saveImportant"):
+            value = self.get_argument("value")
+            valor = value.split(":")
+            valor.append("newMessage")
+            conn = sqlite3.connect('important.db')
+            c = conn.cursor()
+            print(sqlite3.paramstyle)
+            c.execute("insert into messages values(? ,?, ?, ?)",valor)
+            conn.commit()
+            #c = conn.cursor()
+            #c.execute('select * from messages')
+            #res = c.fetchall()
+            #c = conn.cursor()
+
+
         if(action =="send"):
             to = self.get_argument("to")
             message = self.get_argument("message")
             user = self.get_argument("ussername")
-            conn = sqlite3.connect('database.db')
+
             mtype = self.get_argument("type");
-            c = conn.cursor()
-            c.execute("insert into messages values (?, ?)", (message,user))
-            conn.commit()
+
             print(message)
             Clientes[0].send_message(mto=to, mbody=message,mtype=mtype)
+            urls = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', message)
+            if urls:
+                message = "<a href='"+urls[0]+"'>"+urls[0]+"</a>"
+
             data = {"action":"newMessage","value":message, "sender": to,"status":"1"}
             data = json.dumps(data)
             jsonMessages.append(data)

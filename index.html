@@ -253,11 +253,11 @@
         //window.alert($("#Amigos").val())
         if(json.sender == currentChat){
           if(json.status != undefined){
-          $("#messageBoard").append("<b>"+user+": <b>");
+          $("#messageBoard").append("<input type='checkbox' onclick='MessageImportant(this)' name='optradio' value='"+json.sender+":"+json.value+":1'><b>"+user+": <b>");
         }else if(json.nick != undefined){
-            $("#messageBoard").append("<b>"+json.nick+": <b>");
+            $("#messageBoard").append("<input type='checkbox' onclick='MessageImportant(this)' name='optradio' value='"+json.nick+":"+json.value+":0'><b>"+json.nick+": <b>");
         }else {
-          $("#messageBoard").append("<b>"+json.sender+": <b>");
+          $("#messageBoard").append("<input type='checkbox' onclick='MessageImportant(this)' name='optradio' value='"+json.sender+":"+json.value+":0'><b>"+json.sender+": <b>");
         }
           $("#messageBoard").append(json.value + "</br>");
           $cont[0].scrollTop = $cont[0].scrollHeight;
@@ -357,14 +357,33 @@
 
     $(string).remove();
   }
+
+  function Importants(){
+    $("#messageBoard").empty();
+    $.ajax({
+      url: "http://localhost:8888/connect?&action=getImportant",
+      context: document.body
+    });
+  }
+
   function current(ancor,group){
     console.log(ancor);
     currentChat = ancor;
     $("#chatName").html(currentChat);
     $("#eliminar").html("<button onclick='eliminar()' class='btn btn-danger'>Eliminar</button>");
+    $("#eliminar").append("<button onclick='Importants()' class='btn'>Important Messages</button>");
     FriendChanged();
     //window.alert(currentChat);
     groupchatBool = group;
+  }
+  function MessageImportant(object){
+    var valor = $(object).val();
+    window.alert($(object).val());
+    $.ajax({
+      url: "http://localhost:8888/connect?value="+valor+ "&action=saveImportant",
+      context: document.body
+    });
+
   }
   function JoinGroup(){
     var name = $("#GrupC").val();
